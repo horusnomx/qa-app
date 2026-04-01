@@ -1,0 +1,620 @@
+{
+  "info": {
+    "name": "QA API — Práctica Playwright",
+    "description": "Colección completa para probar el backend de práctica. Incluye autenticación JWT y CRUD de tareas.\n\n**Flujo recomendado:**\n1. Ejecutar 'Registro' para crear tu usuario\n2. Ejecutar 'Login' — el token se guarda automáticamente\n3. Usar los endpoints de Tareas (el token se envía solo)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "GET Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Verifica que el servidor esté corriendo. No requiere autenticación."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('API está OK', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql('ok');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Registro — éxito",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/registro",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "registro"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana QA\",\n  \"email\": \"ana@test.com\",\n  \"password\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Crea un nuevo usuario. Devuelve 201 con los datos del usuario creado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 — creado', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Respuesta tiene id y email', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.usuario).to.have.property('id');",
+                  "  pm.expect(body.usuario).to.have.property('email');",
+                  "  pm.expect(body.usuario).to.not.have.property('password_hash');",
+                  "});",
+                  "",
+                  "// Guarda el user_id para usarlo en otros requests",
+                  "const body = pm.response.json();",
+                  "if (body.usuario) {",
+                  "  pm.environment.set('user_id', body.usuario.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro — email duplicado",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/registro",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "registro"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana QA\",\n  \"email\": \"ana@test.com\",\n  \"password\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Intenta registrar el mismo email dos veces. Debe devolver 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 — email duplicado', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Mensaje de error en la respuesta', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('mensaje');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro — campos faltantes",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/registro",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "registro"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sinpassword@test.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Envía un body incompleto. Debe devolver 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 — datos incompletos', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login — éxito",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ana@test.com\",\n  \"password\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Login con credenciales válidas. El test script guarda el token automáticamente en la variable de entorno `token`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Respuesta contiene token JWT', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('token');",
+                  "  pm.expect(body.token).to.be.a('string');",
+                  "  pm.expect(body.token.split('.')).to.have.lengthOf(3); // formato JWT",
+                  "});",
+                  "",
+                  "// ⭐ Guarda el token automáticamente para usarlo en las tareas",
+                  "const body = pm.response.json();",
+                  "if (body.token) {",
+                  "  pm.environment.set('token', body.token);",
+                  "  console.log('Token guardado en environment variable.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login — credenciales inválidas",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ana@test.com\",\n  \"password\": \"password_incorrecto\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Login con password incorrecto. Debe devolver 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 — no autorizado', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('No devuelve token', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.not.have.property('token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tareas",
+      "description": "Todos los endpoints requieren el token JWT en el header Authorization.\nEl token se guarda automáticamente al ejecutar 'Login — éxito'.",
+      "item": [
+        {
+          "name": "GET Tareas — lista vacía inicial",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tareas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas"]
+            },
+            "description": "Lista todas las tareas del usuario autenticado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Respuesta tiene propiedad tareas (array)', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('tareas');",
+                  "  pm.expect(body.tareas).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Respuesta tiene propiedad total', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('total');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Tarea — crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tareas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Escribir tests de login\",\n  \"descripcion\": \"Cubrir casos exitosos y negativos\",\n  \"status\": \"pendiente\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Crea una nueva tarea. Devuelve 201 con la tarea creada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 — tarea creada', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Tarea tiene id, titulo y status', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.tarea).to.have.property('id');",
+                  "  pm.expect(body.tarea).to.have.property('titulo');",
+                  "  pm.expect(body.tarea.status).to.eql('pendiente');",
+                  "});",
+                  "",
+                  "// Guarda el id de la tarea para editar y eliminar",
+                  "const body = pm.response.json();",
+                  "if (body.tarea) {",
+                  "  pm.environment.set('tarea_id', body.tarea.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Tarea — sin título (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tareas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Falta el campo título\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Intenta crear una tarea sin título. Debe devolver 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 — título faltante', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Tareas — filtrar por status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tareas?status=pendiente",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas"],
+              "query": [
+                { "key": "status", "value": "pendiente" }
+              ]
+            },
+            "description": "Lista solo las tareas pendientes. Acepta: pendiente, completada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Todas las tareas son pendientes', () => {",
+                  "  const body = pm.response.json();",
+                  "  body.tareas.forEach(t => {",
+                  "    pm.expect(t.status).to.eql('pendiente');",
+                  "  });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Tarea — editar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tareas/{{tarea_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas", "{{tarea_id}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Escribir tests de login (actualizado)\",\n  \"status\": \"completada\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Edita la tarea creada anteriormente. Usa la variable `tarea_id` guardada automáticamente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Status actualizado a completada', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.tarea.status).to.eql('completada');",
+                  "});",
+                  "",
+                  "pm.test('updated_at fue modificado', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.tarea).to.have.property('updated_at');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Tarea — id inexistente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tareas/99999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas", "99999"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"No debería existir\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Intenta editar una tarea que no existe. Debe devolver 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 — no encontrada', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Tarea — eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tareas/{{tarea_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas", "{{tarea_id}}"]
+            },
+            "description": "Elimina la tarea creada. Usa la variable `tarea_id` guardada automáticamente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Mensaje confirma eliminación', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('mensaje');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Tarea — id inexistente",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tareas/99999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas", "99999"]
+            },
+            "description": "Intenta eliminar una tarea que no existe. Debe devolver 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 — no encontrada', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Seguridad",
+      "description": "Casos para verificar que la autenticación funciona correctamente.",
+      "item": [
+        {
+          "name": "GET Tareas — sin token",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/tareas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas"]
+            },
+            "description": "Llama a un endpoint protegido sin enviar token. Debe devolver 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 — sin token', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Tareas — token inválido",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer token_falso_inventado" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tareas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tareas"]
+            },
+            "description": "Envía un token que no es válido. Debe devolver 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 — token inválido', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
