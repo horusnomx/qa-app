@@ -42,6 +42,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ── Raíz → login ─────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // ── Ruta 404 para endpoints no definidos ─────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ mensaje: `Ruta ${req.method} ${req.path} no encontrada.` });
