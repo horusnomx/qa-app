@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Tareas — QA App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="top-bar">
+    <div class="top-bar-brand">QA App</div>
+    <div class="top-bar-right">
+      <span data-testid="user-nombre"></span>
+      <button class="btn-ghost btn-danger" data-testid="btn-logout">Salir</button>
+    </div>
+  </header>
+
+  <div class="app-container">
+
+    <div class="page-header">
+      <h1 class="page-title">Mis Tareas</h1>
+    </div>
+
+    <!-- Nueva tarea -->
+    <section class="nueva-tarea">
+      <h2>Nueva tarea</h2>
+      <form id="nueva-tarea-form" data-testid="nueva-tarea-form" novalidate>
+        <div class="form-row">
+          <div class="field">
+            <label for="titulo">Título</label>
+            <input
+              type="text"
+              id="titulo"
+              name="titulo"
+              data-testid="input-titulo"
+              placeholder="¿Qué hay que hacer?"
+              required
+            >
+          </div>
+          <div class="field">
+            <label for="descripcion">Descripción</label>
+            <input
+              type="text"
+              id="descripcion"
+              name="descripcion"
+              data-testid="input-descripcion"
+              placeholder="Detalles opcionales"
+            >
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="field">
+            <label for="status">Estado inicial</label>
+            <select id="status" name="status" data-testid="select-status">
+              <option value="pendiente">Pendiente</option>
+              <option value="completada">Completada</option>
+            </select>
+          </div>
+          <div class="field" style="display:flex; align-items:flex-end;">
+            <button type="submit" class="btn-primary" data-testid="btn-crear-tarea">+ Agregar</button>
+          </div>
+        </div>
+      </form>
+
+      <div id="form-error" class="error-banner hidden" data-testid="form-error"></div>
+    </section>
+
+    <!-- Filtros y lista -->
+    <section class="filtros">
+      <label>Estado</label>
+      <button data-testid="btn-filtro-todos"      class="filtro activo">Todas</button>
+      <button data-testid="btn-filtro-pendiente"  class="filtro">Pendientes</button>
+      <button data-testid="btn-filtro-completada" class="filtro">Completadas</button>
+    </section>
+
+    <p data-testid="total-tareas" class="total-label"></p>
+    <div id="lista-tareas" data-testid="lista-tareas"></div>
+    <p id="empty-state" class="empty hidden" data-testid="empty-state">Sin tareas todavía</p>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
