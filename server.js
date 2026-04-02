@@ -6,6 +6,7 @@ require('dotenv').config(); // cargar variables de entorno desde .env
 
 const express = require('express');
 const cors    = require('cors');
+const path    = require('path');
 
 // Cliente de Supabase (inicializa la conexión al importar)
 require('./database');
@@ -13,6 +14,9 @@ require('./database');
 const app = express();
 
 // ── Middlewares globales ─────────────────────────────────────────────────────
+
+// Servir archivos estáticos desde /public (index.html, registro.html, tareas.html)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS: permite que otros orígenes (ej: Playwright, Postman, frontend) consuman la API
 app.use(cors({

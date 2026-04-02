@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — QA App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="auth-page">
+
+    <!-- Panel izquierdo decorativo -->
+    <aside class="auth-panel">
+      <div class="panel-brand">QA App</div>
+
+      <div class="panel-hero">
+        <h1 class="panel-title">Gestiona<br>tus tareas<br><span>sin ruido.</span></h1>
+        <p class="panel-desc">Una herramienta limpia para equipos de QA. Crea, filtra y cierra tareas con tu API REST.</p>
+      </div>
+
+      <div class="panel-footer">v1.0.0 · Supabase · Railway</div>
+    </aside>
+
+    <!-- Panel derecho: formulario -->
+    <main class="auth-form-wrap">
+      <div class="auth-form-inner">
+        <h2 class="auth-heading">Acceder</h2>
+        <p class="auth-sub">Ingresa con tu cuenta para continuar.</p>
+
+        <div id="error-message" class="error-banner hidden" data-testid="error-message"></div>
+
+        <form id="login-form" data-testid="login-form" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              data-testid="input-email"
+              placeholder="tu@email.com"
+              autocomplete="email"
+              required
+            >
+          </div>
+
+          <div class="field">
+            <label for="password">Contraseña</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              data-testid="input-password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+            >
+          </div>
+
+          <button type="submit" class="btn-primary" data-testid="btn-login">Entrar →</button>
+        </form>
+
+        <p class="alt-link">¿No tienes cuenta? <a href="registro.html" data-testid="link-registro">Registrarse</a></p>
+      </div>
+    </main>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
