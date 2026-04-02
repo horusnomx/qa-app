@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title><%= project.key %>-<%= issue.number %> · <%= issue.title %> — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Modo oscuro">🌙</button>
+<%- include('../partials/_project_nav', { project, memberRole, activeTab: 'issues' }) %>
+
+<div class="page-container full-width">
+  <%- include('../partials/_flash') %>
+
+  <% const TYPE_ICON={ epic:'⚡', story:'📖', task:'✅', bug:'🐛' }; %>
+  <% const PRIORITY_ICON={ critical:'🔴', high:'🟠', medium:'🟡', low:'🔵' }; %>
+  <% const STATUS_LABEL={ backlog:'Backlog', todo:'Por hacer', in_progress:'En progreso', in_review:'En revisión', done:'Hecho' }; %>
+
+  <div class="issue-detail">
+
+    <!-- ── Columna principal ── -->
+    <div class="issue-main">
+      <div class="issue-header">
+        <div class="issue-meta-top">
+          <span class="issue-key" data-testid="issue-key"><%= project.key %>-<%= issue.number %></span>
+          <span class="type-badge type-<%= issue.type %>"><%- TYPE_ICON[issue.type] %> <%= issue.type %></span>
+        </div>
+        <h1 class="issue-title" data-testid="issue-title"><%= issue.title %></h1>
+        <div class="issue-actions">
+          <% if (['member','admin','owner'].includes(memberRole)) { %>
+            <a href="/projects/<%= project.id %>/issues/<%= issue.number %>/edit" class="btn btn-sm" data-testid="btn-edit-issue">Editar</a>
+          <% } %>
+          <% if (['admin','owner'].includes(memberRole) || issue.reporter_id === currentUser.id) { %>
+            <form method="POST" action="/projects/<%= project.id %>/issues/<%= issue.number %>/delete" style="display:inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar este issue?')" data-testid="btn-delete-issue">Eliminar</button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="issue-description" data-testid="issue-description">
+        <h3>Descripción</h3>
+        <% if (issue.description) { %>
+          <div class="description-body"><%= issue.description %></div>
+        <% } else { %>
+          <p class="empty-hint">Sin descripción.</p>
+        <% } %>
+      </div>
+
+      <!-- ── Comentarios ── -->
+      <div class="issue-section" id="comments" data-testid="comments-section">
+        <h3>Comentarios (<%= comments.length %>)</h3>
+
+        <% comments.forEach(c => { %>
+          <div class="comment" data-testid="comment" data-comment-id="<%= c.id %>">
+            <div class="comment-header">
+              <span class="avatar-chip"><%= c.username.slice(0,2).toUpperCase() %></span>
+              <strong data-testid="comment-author"><%= c.username %></strong>
+              <span class="comment-date"><%= c.created_at.split('T')[0] %></span>
+              <% if (c.user_id === currentUser.id || ['admin','owner'].includes(memberRole)) { %>
+                <form method="POST" action="/projects/<%= project.id %>/issues/<%= issue.number %>/comments/<%= c.id %>/delete" style="display:inline; margin-left:auto">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="btn btn-sm btn-ghost" onclick="return confirm('¿Eliminar comentario?')" data-testid="btn-delete-comment">✕</button>
+                </form>
+              <% } %>
+            </div>
+            <div class="comment-body" data-testid="comment-body"><%= c.body %></div>
+          </div>
+        <% }) %>
+
+        <% if (['member','admin','owner'].includes(memberRole)) { %>
+          <form method="POST" action="/projects/<%= project.id %>/issues/<%= issue.number %>/comments" data-testid="comment-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="field">
+              <textarea name="body" data-testid="input-comment" rows="3" placeholder="Escribe un comentario…" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-sm" data-testid="btn-add-comment">Comentar</button>
+          </form>
+        <% } %>
+      </div>
+
+      <!-- ── Work Logs ── -->
+      <div class="issue-section" id="worklogs" data-testid="worklogs-section">
+        <h3>Tiempo trabajado</h3>
+        <div class="time-summary" data-testid="time-summary">
+          <span>⏱ Registrado: <strong><%= formatHours(logged) %></strong></span>
+          <% if (issue.estimated_hours) { %>
+            <span>/ Estimado: <strong><%= formatHours(issue.estimated_hours) %></strong></span>
+            <% const pct = Math.min(100, Math.round((logged / issue.estimated_hours) * 100)); %>
+            <div class="time-bar"><div class="time-bar-fill" style="width:<%= pct %>%" data-testid="time-bar-fill"></div></div>
+          <% } %>
+        </div>
+
+        <% if (workLogs.length) { %>
+          <table class="worklogs-table" data-testid="worklogs-table">
+            <thead><tr><th>Fecha</th><th>Usuario</th><th>Horas</th><th>Nota</th><th></th></tr></thead>
+            <tbody>
+              <% workLogs.forEach(wl => { %>
+                <tr data-testid="worklog-row">
+                  <td><%= wl.logged_at %></td>
+                  <td><%= wl.username %></td>
+                  <td data-testid="worklog-hours"><%= formatHours(wl.hours) %></td>
+                  <td><%= wl.note || '—' %></td>
+                  <td>
+                    <% if (wl.user_id === currentUser.id || ['admin','owner'].includes(memberRole)) { %>
+                      <form method="POST" action="/projects/<%= project.id %>/issues/<%= issue.number %>/worklogs/<%= wl.id %>/delete">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button type="submit" class="btn btn-sm btn-ghost" onclick="return confirm('¿Eliminar registro?')" data-testid="btn-delete-worklog">✕</button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+
+        <% if (['member','admin','owner'].includes(memberRole)) { %>
+          <form method="POST" action="/projects/<%= project.id %>/issues/<%= issue.number %>/worklogs" data-testid="worklog-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="inline-fields">
+              <div class="field">
+                <label for="hours">Horas *</label>
+                <input type="number" id="hours" name="hours" data-testid="input-worklog-hours" min="0.5" max="24" step="0.5" required placeholder="ej: 1.5">
+              </div>
+              <div class="field">
+                <label for="logged_at">Fecha</label>
+                <input type="date" id="logged_at" name="logged_at" data-testid="input-worklog-date" value="<%= new Date().toISOString().split('T')[0] %>">
+              </div>
+              <div class="field" style="flex:2">
+                <label for="note">Nota</label>
+                <input type="text" id="note" name="note" data-testid="input-worklog-note" placeholder="Descripción breve…">
+              </div>
+              <div class="field" style="align-self:flex-end">
+                <button type="submit" class="btn btn-sm" data-testid="btn-log-time">Registrar</button>
+              </div>
+            </div>
+          </form>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- ── Sidebar ── -->
+    <aside class="issue-sidebar" data-testid="issue-sidebar">
+
+      <!-- Estado -->
+      <div class="sidebar-field">
+        <label>Estado</label>
+        <% if (['member','admin','owner'].includes(memberRole)) { %>
+          <form method="POST" action="/projects/<%= project.id %>/issues/<%= issue.number %>/status">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <select name="status" class="status-select-full status-<%= issue.status %>" onchange="this.closest('form').submit()" data-testid="select-status">
+              <option value="backlog"     <%= issue.status==='backlog'     ? 'selected':'' %>>Backlog</option>
+              <option value="todo"        <%= issue.status==='todo'        ? 'selected':'' %>>Por hacer</option>
+              <option value="in_progress" <%= issue.status==='in_progress' ? 'selected':'' %>>En progreso</option>
+              <option value="in_review"   <%= issue.status==='in_review'   ? 'selected':'' %>>En revisión</option>
+              <option value="done"        <%= issue.status==='done'        ? 'selected':'' %>>Hecho</option>
+            </select>
+          </form>
+        <% } else { %>
+          <span class="status-badge status-<%= issue.status %>" data-testid="issue-status"><%= STATUS_LABEL[issue.status] %></span>
+        <% } %>
+      </div>
+
+      <div class="sidebar-field">
+        <label>Prioridad</label>
+        <span data-testid="issue-priority"><%- PRIORITY_ICON[issue.priority] %> <%= issue.priority %></span>
+      </div>
+
+      <div class="sidebar-field">
+        <label>Tipo</label>
+        <span data-testid="issue-type"><%- TYPE_ICON[issue.type] %> <%= issue.type %></span>
+      </div>
+
+      <div class="sidebar-field">
+        <label>Asignado a</label>
+        <span data-testid="issue-assignee"><%= issue.assignee_name || 'Sin asignar' %></span>
+      </div>
+
+      <div class="sidebar-field">
+        <label>Reporter</label>
+        <span data-testid="issue-reporter"><%= issue.reporter_name %></span>
+      </div>
+
+      <div class="sidebar-field">
+        <label>Sprint</label>
+        <span data-testid="issue-sprint"><%= issue.sprint_name || 'Sin sprint' %></span>
+      </div>
+
+      <% if (issue.due_date) { %>
+        <div class="sidebar-field">
+          <label>Fecha límite</label>
+          <span class="<%= new Date(issue.due_date) < new Date() ? 'overdue' : '' %>" data-testid="issue-due-date"><%= issue.due_date %></span>
+        </div>
+      <% } %>
+
+      <% if (issue.estimated_hours) { %>
+        <div class="sidebar-field">
+          <label>Horas estimadas</label>
+          <span data-testid="issue-estimated"><%= formatHours(issue.estimated_hours) %></span>
+        </div>
+      <% } %>
+
+      <% if (issueLabels.length) { %>
+        <div class="sidebar-field">
+          <label>Etiquetas</label>
+          <div class="labels-wrap" data-testid="issue-labels">
+            <% issueLabels.forEach(l => { %>
+              <span class="label-pill" style="background:<%= l.color %>; color:<%= isLight(l.color) ? '#000':'#fff' %>"><%= l.name %></span>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="sidebar-field sidebar-dates">
+        <label>Creado</label>
+        <span><%= issue.created_at.split('T')[0] %></span>
+        <label>Actualizado</label>
+        <span><%= issue.updated_at.split('T')[0] %></span>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

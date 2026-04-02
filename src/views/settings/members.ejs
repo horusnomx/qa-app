@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title>Miembros · <%= project.key %> — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Modo oscuro">🌙</button>
+<%- include('../partials/_project_nav', { project, memberRole, activeTab: 'settings' }) %>
+
+<div class="page-container">
+  <div class="settings-layout">
+    <nav class="settings-sidebar">
+      <a href="/projects/<%= project.id %>/settings/members" class="settings-link active" data-testid="settings-nav-members">Miembros</a>
+      <a href="/projects/<%= project.id %>/settings/labels"  class="settings-link" data-testid="settings-nav-labels">Etiquetas</a>
+      <a href="/projects/<%= project.id %>/settings/sprints" class="settings-link" data-testid="settings-nav-sprints">Sprints</a>
+    </nav>
+
+    <div class="settings-content">
+      <h2>Miembros del proyecto</h2>
+      <%- include('../partials/_flash') %>
+
+      <% if (errors.length) { %>
+        <ul class="error-list" data-testid="error-list">
+          <% errors.forEach(e => { %><li><%= e %></li><% }) %>
+        </ul>
+      <% } %>
+
+      <table data-testid="members-table">
+        <thead>
+          <tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Miembro desde</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          <% members.forEach(m => { %>
+            <tr data-testid="member-row" data-user-id="<%= m.user_id %>">
+              <td data-testid="member-username"><strong><%= m.username %></strong></td>
+              <td><%= m.email %></td>
+              <td>
+                <% if (m.role === 'owner') { %>
+                  <span class="role-badge role-owner">owner</span>
+                <% } else if (memberRole === 'owner') { %>
+                  <form method="POST" action="/projects/<%= project.id %>/settings/members/<%= m.user_id %>/role" style="display:inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <select name="role" onchange="this.closest('form').submit()" data-testid="select-member-role">
+                      <option value="admin"  <%= m.role==='admin'  ? 'selected':'' %>>admin</option>
+                      <option value="member" <%= m.role==='member' ? 'selected':'' %>>member</option>
+                      <option value="viewer" <%= m.role==='viewer' ? 'selected':'' %>>viewer</option>
+                    </select>
+                  </form>
+                <% } else { %>
+                  <span class="role-badge role-<%= m.role %>"><%= m.role %></span>
+                <% } %>
+              </td>
+              <td><%= m.joined_at ? m.joined_at.split('T')[0] : '—' %></td>
+              <td>
+                <% if (m.role !== 'owner' && m.user_id !== currentUser.id) { %>
+                  <form method="POST" action="/projects/<%= project.id %>/settings/members/<%= m.user_id %>/remove" style="display:inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar a <%= m.username %> del proyecto?')" data-testid="btn-remove-member">Expulsar</button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <div class="card" style="margin-top:2rem">
+        <h3>Invitar miembro</h3>
+        <form method="POST" action="/projects/<%= project.id %>/settings/members/invite" data-testid="invite-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="inline-fields">
+            <div class="field" style="flex:1">
+              <label for="email">Email del usuario</label>
+              <input type="email" id="email" name="email" data-testid="input-invite-email" required placeholder="usuario@ejemplo.com">
+            </div>
+            <div class="field">
+              <label for="role">Rol</label>
+              <select id="role" name="role" data-testid="select-invite-role">
+                <option value="member">member</option>
+                <option value="admin">admin</option>
+                <option value="viewer">viewer</option>
+              </select>
+            </div>
+            <div class="field" style="align-self:flex-end">
+              <button type="submit" data-testid="btn-invite">Invitar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <% if (memberRole === 'owner') { %>
+        <div class="danger-zone">
+          <h3>Zona peligrosa</h3>
+          <form method="POST" action="/projects/<%= project.id %>/delete">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('¿Eliminar el proyecto \"<%= project.name %>\" y TODOS sus datos? Esta acción no se puede deshacer.')" data-testid="btn-delete-project">
+              Eliminar proyecto
+            </button>
+          </form>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+</body>
+</html>

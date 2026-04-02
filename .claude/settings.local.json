@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(timeout 5 node src/server.js)",
+      "Bash(timeout 6 node -e \"process.env.PORT=''3001''; require\\(''./src/server.js''\\)\")",
+      "Bash(node:*)",
+      "Bash(cd:*)",
+      "Bash(npx playwright:*)"
+    ]
+  }
+}

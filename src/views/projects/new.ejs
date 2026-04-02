@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title>Nuevo Proyecto — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Modo oscuro">🌙</button>
+
+<div class="page-container" style="max-width:560px">
+  <div class="page-header">
+    <h1>Nuevo proyecto</h1>
+    <a href="/projects" class="btn btn-secondary">Cancelar</a>
+  </div>
+
+  <%- include('../partials/_flash') %>
+
+  <% if (errors.length) { %>
+    <ul class="error-list" data-testid="error-list">
+      <% errors.forEach(e => { %><li><%= e %></li><% }) %>
+    </ul>
+  <% } %>
+
+  <div class="card">
+    <form method="POST" action="/projects" data-testid="project-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="field">
+        <label for="name">Nombre del proyecto</label>
+        <input type="text" id="name" name="name" data-testid="input-project-name"
+          value="<%= old.name || '' %>" required maxlength="80"
+          oninput="autoKey(this.value)">
+      </div>
+
+      <div class="field">
+        <label for="key">Clave del proyecto <small>(2-10 letras mayúsculas, única)</small></label>
+        <input type="text" id="key" name="key" data-testid="input-project-key"
+          value="<%= old.key || '' %>" required maxlength="10"
+          pattern="[A-Za-z]{2,10}" style="text-transform:uppercase">
+        <small>Ej: QA, SHOP, MYPROJ — aparecerá en los IDs de issues (QA-1, QA-2…)</small>
+      </div>
+
+      <div class="field">
+        <label for="description">Descripción <small>(opcional)</small></label>
+        <textarea id="description" name="description" data-testid="input-project-description"
+          rows="3"><%= old.description || '' %></textarea>
+      </div>
+
+      <button type="submit" data-testid="btn-create-project">Crear proyecto</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function autoKey(name) {
+  const key = name.toUpperCase().replace(/[^A-Z\s]/g,'').split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0,5);
+  const el  = document.getElementById('key');
+  if (!el._userEdited) el.value = key;
+}
+document.getElementById('key').addEventListener('input', function() { this._userEdited = true; });
+document.getElementById('key').addEventListener('change', function() { this.value = this.value.toUpperCase().replace(/[^A-Z]/g,''); });
+</script>
+</body>
+</html>

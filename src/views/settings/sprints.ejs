@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title>Sprints · <%= project.key %> — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Modo oscuro">🌙</button>
+<%- include('../partials/_project_nav', { project, memberRole, activeTab: 'settings' }) %>
+
+<div class="page-container">
+  <div class="settings-layout">
+    <nav class="settings-sidebar">
+      <a href="/projects/<%= project.id %>/settings/members" class="settings-link" data-testid="settings-nav-members">Miembros</a>
+      <a href="/projects/<%= project.id %>/settings/labels"  class="settings-link" data-testid="settings-nav-labels">Etiquetas</a>
+      <a href="/projects/<%= project.id %>/settings/sprints" class="settings-link active" data-testid="settings-nav-sprints">Sprints</a>
+    </nav>
+
+    <div class="settings-content">
+      <h2>Sprints</h2>
+      <%- include('../partials/_flash') %>
+
+      <% if (errors.length) { %>
+        <ul class="error-list" data-testid="error-list">
+          <% errors.forEach(e => { %><li><%= e %></li><% }) %>
+        </ul>
+      <% } %>
+
+      <div data-testid="sprints-list">
+        <% if (!sprints.length) { %><p>No hay sprints todavía.</p><% } %>
+        <% sprints.forEach(s => { %>
+          <div class="sprint-card sprint-<%= s.status %>" data-testid="sprint-item" data-sprint-id="<%= s.id %>">
+            <div class="sprint-card-header">
+              <span class="sprint-status-badge status-sprint-<%= s.status %>">
+                <%= s.status === 'active' ? '▶ ACTIVO' : s.status === 'completed' ? '✓ COMPLETADO' : '○ PLANIFICACIÓN' %>
+              </span>
+              <strong><%= s.name %></strong>
+              <span class="board-count"><%= s.issue_count %> issues</span>
+            </div>
+            <% if (s.goal) { %><p class="sprint-goal"><%= s.goal %></p><% } %>
+            <% if (s.start_date || s.end_date) { %>
+              <p class="sprint-dates">📅 <%= s.start_date || '?' %> → <%= s.end_date || '?' %></p>
+            <% } %>
+            <% if (s.status !== 'completed') { %>
+              <div class="sprint-card-actions">
+                <% if (s.status === 'planning') { %>
+                  <form method="POST" action="/projects/<%= project.id %>/settings/sprints/<%= s.id %>/start" style="display:inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="btn btn-sm" data-testid="btn-start-sprint">▶ Iniciar</button>
+                  </form>
+                  <form method="POST" action="/projects/<%= project.id %>/settings/sprints/<%= s.id %>/delete" style="display:inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar sprint? Los issues se moverán al backlog.')" data-testid="btn-delete-sprint">Eliminar</button>
+                  </form>
+                <% } %>
+                <% if (s.status === 'active') { %>
+                  <form method="POST" action="/projects/<%= project.id %>/settings/sprints/<%= s.id %>/complete" style="display:inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('¿Completar sprint? Los issues no terminados volverán al backlog.')" data-testid="btn-complete-sprint">✓ Completar sprint</button>
+                  </form>
+                <% } %>
+              </div>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem">
+        <h3>Nuevo sprint</h3>
+        <form method="POST" action="/projects/<%= project.id %>/settings/sprints" data-testid="sprint-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="field">
+            <label for="name">Nombre</label>
+            <input type="text" id="name" name="name" data-testid="input-sprint-name" required maxlength="80" placeholder="Sprint 1">
+          </div>
+          <div class="field">
+            <label for="goal">Objetivo <small>(opcional)</small></label>
+            <input type="text" id="goal" name="goal" data-testid="input-sprint-goal" maxlength="200">
+          </div>
+          <div class="inline-fields">
+            <div class="field" style="flex:1">
+              <label for="start_date">Fecha inicio</label>
+              <input type="date" id="start_date" name="start_date" data-testid="input-sprint-start">
+            </div>
+            <div class="field" style="flex:1">
+              <label for="end_date">Fecha fin</label>
+              <input type="date" id="end_date" name="end_date" data-testid="input-sprint-end">
+            </div>
+          </div>
+          <button type="submit" data-testid="btn-create-sprint">Crear sprint</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

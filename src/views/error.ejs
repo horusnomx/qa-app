@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title>Error <%= status %> — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Cambiar tema">🌙</button>
+  <div class="container" style="text-align:center; padding: 3rem 2rem;">
+    <h1 style="font-size:4rem; margin-bottom:.5rem;"><%= status || 500 %></h1>
+    <p style="font-size:1.2rem; margin-bottom:2rem;"><%= message || 'Ocurrió un error inesperado.' %></p>
+    <a href="/" class="btn">Volver al inicio</a>
+  </div>
+</body>
+</html>

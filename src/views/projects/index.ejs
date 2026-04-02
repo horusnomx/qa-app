@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title>Proyectos — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Modo oscuro">🌙</button>
+
+<div class="page-container">
+  <div class="page-header">
+    <h1>Mis Proyectos</h1>
+    <a href="/projects/new" class="btn" data-testid="btn-new-project">+ Nuevo proyecto</a>
+  </div>
+
+  <%- include('../partials/_flash') %>
+
+  <% if (projects.length === 0) { %>
+    <div class="empty-state" data-testid="empty-projects">
+      <p>No perteneces a ningún proyecto todavía.</p>
+      <a href="/projects/new" class="btn">Crear mi primer proyecto</a>
+    </div>
+  <% } else { %>
+    <div class="project-grid" data-testid="projects-list">
+      <% projects.forEach(p => { %>
+        <a href="/projects/<%= p.id %>/board" class="project-card" data-testid="project-card">
+          <div class="project-card-header">
+            <span class="project-key-badge"><%= p.key %></span>
+            <span class="role-badge role-<%= p.role %>"><%= p.role %></span>
+          </div>
+          <h3 class="project-card-name"><%= p.name %></h3>
+          <% if (p.description) { %>
+            <p class="project-card-desc"><%= p.description %></p>
+          <% } %>
+          <div class="project-card-stats">
+            <span><%= p.open_issues %> issues abiertos</span>
+            <span><%= p.member_count %> miembros</span>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+</body>
+</html>

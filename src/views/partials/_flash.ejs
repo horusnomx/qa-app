@@ -1,0 +1,9 @@
+<% if (flash.success) { %>
+  <div class="alert alert-success" data-testid="flash-success" role="alert"><%= flash.success %></div>
+<% } %>
+<% if (flash.error) { %>
+  <div class="alert alert-error" data-testid="flash-error" role="alert"><%= flash.error %></div>
+<% } %>
+<% if (flash.info) { %>
+  <div class="alert alert-info" data-testid="flash-info" role="alert"><%= flash.info %></div>
+<% } %>

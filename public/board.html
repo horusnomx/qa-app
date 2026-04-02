@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Board — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <!-- Sortable.js para drag & drop -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand"><a href="/proyectos.html">QA App</a></div>
+    <div class="navbar-links">
+      <a href="/proyectos.html" data-testid="nav-proyectos">Proyectos</a>
+      <span style="color:var(--text-muted);">/</span>
+      <span id="proyecto-nombre" data-testid="proyecto-nombre" style="color:var(--text);font-size:.9rem;"></span>
+    </div>
+    <div class="navbar-user">
+      <span id="user-name" data-testid="navbar-username"></span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()" data-testid="btn-logout">Salir</button>
+    </div>
+  </nav>
+
+  <!-- Topbar del proyecto -->
+  <div class="project-topbar">
+    <div class="project-breadcrumb">
+      <a href="/proyectos.html">Proyectos</a> /
+      <span id="proyecto-clave-breadcrumb" data-testid="proyecto-clave"></span>
+    </div>
+    <div class="project-tabs">
+      <a href="#" class="tab active" data-testid="tab-board">Board</a>
+    </div>
+  </div>
+
+  <div class="page-container full-width" style="padding-top:1rem;">
+    <!-- Toolbar -->
+    <div class="board-toolbar">
+      <button class="btn" id="btn-nuevo-issue" data-testid="btn-nuevo-issue">
+        + Crear issue
+      </button>
+      <div class="filters-bar" style="flex:1;margin-bottom:0;">
+        <select id="filter-tipo" data-testid="filter-tipo">
+          <option value="">Todos los tipos</option>
+          <option value="historia">📗 Historia</option>
+          <option value="bug">🐛 Bug</option>
+          <option value="tarea">✅ Tarea</option>
+          <option value="epica">⚡ Épica</option>
+        </select>
+        <select id="filter-prioridad" data-testid="filter-prioridad">
+          <option value="">Todas las prioridades</option>
+          <option value="critica">🔴 Crítica</option>
+          <option value="alta">🟠 Alta</option>
+          <option value="media">🟡 Media</option>
+          <option value="baja">⚪ Baja</option>
+        </select>
+        <select id="filter-asignado" data-testid="filter-asignado">
+          <option value="">Todos los asignados</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" id="btn-clear-filters" data-testid="btn-clear-filters">
+          Limpiar
+        </button>
+      </div>
+    </div>
+
+    <div id="board-alert"></div>
+
+    <!-- Tablero Kanban -->
+    <div class="board" id="kanban-board" data-testid="kanban-board">
+
+      <div class="board-column" data-status="backlog" data-testid="col-backlog">
+        <div class="board-column-header">
+          <span class="status-dot status-todo"></span>
+          Backlog
+          <span class="board-count" id="count-backlog" data-testid="count-backlog">0</span>
+        </div>
+        <div class="board-cards" id="cards-backlog" data-testid="cards-backlog"></div>
+      </div>
+
+      <div class="board-column" data-status="en_progreso" data-testid="col-en_progreso">
+        <div class="board-column-header">
+          <span class="status-dot status-in_progress"></span>
+          En Progreso
+          <span class="board-count" id="count-en_progreso" data-testid="count-en_progreso">0</span>
+        </div>
+        <div class="board-cards" id="cards-en_progreso" data-testid="cards-en_progreso"></div>
+      </div>
+
+      <div class="board-column" data-status="en_revision" data-testid="col-en_revision">
+        <div class="board-column-header">
+          <span class="status-dot status-in_review"></span>
+          En Revisión
+          <span class="board-count" id="count-en_revision" data-testid="count-en_revision">0</span>
+        </div>
+        <div class="board-cards" id="cards-en_revision" data-testid="cards-en_revision"></div>
+      </div>
+
+      <div class="board-column" data-status="listo" data-testid="col-listo">
+        <div class="board-column-header">
+          <span class="status-dot status-done"></span>
+          Listo
+          <span class="board-count" id="count-listo" data-testid="count-listo">0</span>
+        </div>
+        <div class="board-cards" id="cards-listo" data-testid="cards-listo"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Modal: Crear issue ─────────────────────────────────────────── -->
+  <div id="modal-issue" class="modal-overlay" style="display:none;" data-testid="modal-issue">
+    <div class="modal-box" style="max-width:560px;">
+      <div class="modal-header">
+        <h3>Crear issue</h3>
+        <button class="modal-close" onclick="hideModal('modal-issue')" data-testid="btn-cerrar-modal-issue">✕</button>
+      </div>
+
+      <div id="issue-modal-error" class="alert alert-error" style="display:none;"></div>
+
+      <form id="form-nuevo-issue" novalidate>
+        <div class="field">
+          <label for="issue-titulo">Título *</label>
+          <input id="issue-titulo" type="text" placeholder="Describe brevemente el issue…"
+                 required maxlength="200" data-testid="input-titulo">
+        </div>
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="issue-tipo">Tipo</label>
+            <select id="issue-tipo" data-testid="select-tipo">
+              <option value="tarea">✅ Tarea</option>
+              <option value="historia">📗 Historia</option>
+              <option value="bug">🐛 Bug</option>
+              <option value="epica">⚡ Épica</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="issue-prioridad">Prioridad</label>
+            <select id="issue-prioridad" data-testid="select-prioridad">
+              <option value="media">Media</option>
+              <option value="critica">Crítica</option>
+              <option value="alta">Alta</option>
+              <option value="baja">Baja</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="issue-status">Status inicial</label>
+            <select id="issue-status" data-testid="select-status">
+              <option value="backlog">Backlog</option>
+              <option value="en_progreso">En Progreso</option>
+              <option value="en_revision">En Revisión</option>
+              <option value="listo">Listo</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="issue-asignado">Asignado a</label>
+            <select id="issue-asignado" data-testid="select-asignado">
+              <option value="">Sin asignar</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="issue-descripcion">Descripción</label>
+          <textarea id="issue-descripcion" rows="3" placeholder="Detalles del issue…"
+                    data-testid="input-descripcion"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" data-testid="btn-crear-issue">Crear issue</button>
+          <button type="button" class="btn btn-secondary"
+                  onclick="hideModal('modal-issue')" data-testid="btn-cancelar-modal">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" data-testid="btn-theme-toggle">🌙</button>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => initBoard());
+  </script>
+</body>
+</html>

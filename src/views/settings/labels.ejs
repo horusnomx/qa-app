@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title>Etiquetas · <%= project.key %> — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Modo oscuro">🌙</button>
+<%- include('../partials/_project_nav', { project, memberRole, activeTab: 'settings' }) %>
+
+<div class="page-container">
+  <div class="settings-layout">
+    <nav class="settings-sidebar">
+      <a href="/projects/<%= project.id %>/settings/members" class="settings-link" data-testid="settings-nav-members">Miembros</a>
+      <a href="/projects/<%= project.id %>/settings/labels"  class="settings-link active" data-testid="settings-nav-labels">Etiquetas</a>
+      <a href="/projects/<%= project.id %>/settings/sprints" class="settings-link" data-testid="settings-nav-sprints">Sprints</a>
+    </nav>
+
+    <div class="settings-content">
+      <h2>Etiquetas del proyecto</h2>
+      <%- include('../partials/_flash') %>
+
+      <% if (errors.length) { %>
+        <ul class="error-list" data-testid="error-list">
+          <% errors.forEach(e => { %><li><%= e %></li><% }) %>
+        </ul>
+      <% } %>
+
+      <div class="labels-grid" data-testid="labels-list">
+        <% if (!labels.length) { %>
+          <p>No hay etiquetas todavía.</p>
+        <% } %>
+        <% labels.forEach(l => { %>
+          <div class="label-item" data-testid="label-item">
+            <span class="label-pill label-pill-lg" style="background:<%= l.color %>; color:<%= isLight(l.color) ? '#000':'#fff' %>"><%= l.name %></span>
+            <code><%= l.color %></code>
+            <form method="POST" action="/projects/<%= project.id %>/settings/labels/<%= l.id %>/delete" style="display:inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar etiqueta \"<%= l.name %>\"?')" data-testid="btn-delete-label">✕</button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem">
+        <h3>Nueva etiqueta</h3>
+        <form method="POST" action="/projects/<%= project.id %>/settings/labels" data-testid="label-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="inline-fields">
+            <div class="field" style="flex:1">
+              <label for="name">Nombre</label>
+              <input type="text" id="name" name="name" data-testid="input-label-name" required maxlength="30" placeholder="ej: frontend, urgente…">
+            </div>
+            <div class="field">
+              <label for="color">Color</label>
+              <input type="color" id="color" name="color" data-testid="input-label-color" value="#6b8aff">
+            </div>
+            <div class="field" style="align-self:flex-end">
+              <button type="submit" data-testid="btn-create-label">Crear</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

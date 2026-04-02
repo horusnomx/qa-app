@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Issue — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand"><a href="/proyectos.html">QA App</a></div>
+    <div class="navbar-links">
+      <a href="/proyectos.html" data-testid="nav-proyectos">Proyectos</a>
+      <span style="color:var(--text-muted);">/</span>
+      <a id="nav-proyecto-link" href="#" data-testid="nav-proyecto-link"></a>
+      <span style="color:var(--text-muted);">/</span>
+      <span id="nav-issue-key" style="color:var(--text);font-size:.9rem;" data-testid="nav-issue-key"></span>
+    </div>
+    <div class="navbar-user">
+      <span id="user-name" data-testid="navbar-username"></span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()" data-testid="btn-logout">Salir</button>
+    </div>
+  </nav>
+
+  <div id="issue-loading" class="page-container" style="text-align:center;padding-top:3rem;">
+    Cargando issue…
+  </div>
+
+  <div id="issue-container" style="display:none;">
+    <!-- Topbar -->
+    <div class="project-topbar">
+      <div class="project-breadcrumb">
+        <a href="/proyectos.html">Proyectos</a> /
+        <a id="breadcrumb-proyecto" href="#" data-testid="breadcrumb-proyecto"></a> /
+        <span id="breadcrumb-issue-key" data-testid="breadcrumb-issue-key"></span>
+      </div>
+    </div>
+
+    <div class="issue-detail">
+      <!-- ── Main ── -->
+      <div class="issue-main">
+        <div class="issue-header">
+          <div class="issue-meta-top">
+            <span id="issue-key-display" class="issue-key" style="font-size:.85rem;" data-testid="issue-key-display"></span>
+            <span id="issue-tipo-badge" class="type-badge" data-testid="issue-tipo-badge"></span>
+            <span id="issue-prioridad-badge" class="badge" style="font-size:.75rem;" data-testid="issue-prioridad-badge"></span>
+          </div>
+
+          <!-- Título editable -->
+          <h1 id="issue-titulo-display" class="issue-title" data-testid="issue-titulo"
+              style="cursor:pointer;" title="Clic para editar"></h1>
+          <input id="issue-titulo-edit" type="text" class="field input" style="display:none;font-size:1.3rem;font-weight:700;margin-bottom:.75rem;"
+                 data-testid="input-titulo-edit" maxlength="200">
+
+          <div class="issue-actions">
+            <button class="btn" id="btn-guardar-issue" style="display:none;" data-testid="btn-guardar-issue">
+              Guardar cambios
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-cancelar-edicion" style="display:none;"
+                    data-testid="btn-cancelar-edicion">
+              Cancelar
+            </button>
+            <button class="btn btn-danger btn-sm" id="btn-eliminar-issue" data-testid="btn-eliminar-issue">
+              Eliminar
+            </button>
+          </div>
+        </div>
+
+        <!-- Descripción editable -->
+        <div class="issue-description">
+          <h3>Descripción</h3>
+          <div id="issue-desc-display" class="description-body" data-testid="issue-descripcion"
+               style="cursor:pointer;min-height:2rem;" title="Clic para editar">
+            <span style="color:var(--text-muted);">Sin descripción — haz clic para agregar</span>
+          </div>
+          <textarea id="issue-desc-edit" class="field" style="display:none;width:100%;" rows="5"
+                    placeholder="Describe el issue…" data-testid="input-descripcion-edit"></textarea>
+        </div>
+
+        <!-- Comentarios -->
+        <div class="issue-section">
+          <h3>Comentarios</h3>
+
+          <div id="lista-comentarios" data-testid="lista-comentarios"></div>
+
+          <form id="comentario-form" data-testid="comentario-form" style="margin-top:.75rem;">
+            <div class="field">
+              <textarea id="input-comentario" rows="3" placeholder="Escribe un comentario…"
+                        data-testid="input-comentario" style="width:100%;"></textarea>
+            </div>
+            <button type="submit" class="btn btn-sm" data-testid="btn-enviar-comentario">
+              Comentar
+            </button>
+          </form>
+        </div>
+
+        <!-- Historial de status -->
+        <div class="issue-section">
+          <h3>Historial de cambios</h3>
+          <div id="historial-status" data-testid="historial-status"></div>
+        </div>
+      </div>
+
+      <!-- ── Sidebar ── -->
+      <div class="issue-sidebar">
+        <div class="sidebar-field">
+          <label>Status</label>
+          <select id="sidebar-status" class="status-select-full" data-testid="sidebar-status">
+            <option value="backlog">Backlog</option>
+            <option value="en_progreso">En Progreso</option>
+            <option value="en_revision">En Revisión</option>
+            <option value="listo">Listo</option>
+          </select>
+        </div>
+
+        <div class="sidebar-field">
+          <label>Tipo</label>
+          <select id="sidebar-tipo" class="status-select-full" data-testid="sidebar-tipo">
+            <option value="tarea">✅ Tarea</option>
+            <option value="historia">📗 Historia</option>
+            <option value="bug">🐛 Bug</option>
+            <option value="epica">⚡ Épica</option>
+          </select>
+        </div>
+
+        <div class="sidebar-field">
+          <label>Prioridad</label>
+          <select id="sidebar-prioridad" class="status-select-full" data-testid="sidebar-prioridad">
+            <option value="critica">🔴 Crítica</option>
+            <option value="alta">🟠 Alta</option>
+            <option value="media">🟡 Media</option>
+            <option value="baja">⚪ Baja</option>
+          </select>
+        </div>
+
+        <div class="sidebar-field">
+          <label>Asignado a</label>
+          <select id="sidebar-asignado" class="status-select-full" data-testid="sidebar-asignado">
+            <option value="">Sin asignar</option>
+          </select>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <button class="btn" id="btn-guardar-sidebar" style="width:100%;" data-testid="btn-guardar-sidebar">
+            Guardar
+          </button>
+        </div>
+
+        <hr style="margin:1rem 0;border-color:var(--border2);">
+
+        <div class="sidebar-field">
+          <label>Reportado por</label>
+          <div id="sidebar-reportado" data-testid="sidebar-reportado" style="font-size:.9rem;"></div>
+        </div>
+
+        <div class="sidebar-field">
+          <label>Creado</label>
+          <div id="sidebar-created" data-testid="sidebar-created" style="font-size:.85rem;color:var(--text-muted);"></div>
+        </div>
+
+        <div class="sidebar-field">
+          <label>Actualizado</label>
+          <div id="sidebar-updated" data-testid="sidebar-updated" style="font-size:.85rem;color:var(--text-muted);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" data-testid="btn-theme-toggle">🌙</button>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => initIssue());
+  </script>
+</body>
+</html>

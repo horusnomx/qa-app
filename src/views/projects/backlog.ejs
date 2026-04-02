@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title>Backlog · <%= project.key %> — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Modo oscuro">🌙</button>
+<%- include('../partials/_project_nav', { project, memberRole, activeTab: 'backlog' }) %>
+
+<div class="page-container">
+  <%- include('../partials/_flash') %>
+
+  <div class="page-header">
+    <h2>Backlog</h2>
+    <% if (['member','admin','owner'].includes(memberRole)) { %>
+      <a href="/projects/<%= project.id %>/issues/new?status=backlog" class="btn" data-testid="btn-new-issue">+ Issue</a>
+    <% } %>
+  </div>
+
+  <%
+    const TYPE_ICON     = { epic: '⚡', story: '📖', task: '✅', bug: '🐛' };
+    const PRIORITY_ICON = { critical: '🔴', high: '🟠', medium: '🟡', low: '🔵' };
+
+    function issueRow(issue, projectId, projectKey, sprints, csrf, canEdit) { %>
+      <tr data-testid="backlog-row" data-issue-id="<%= issue.id %>">
+        <td><span class="issue-key"><%= projectKey %>-<%= issue.number %></span></td>
+        <td title="<%= issue.type %>"><%- TYPE_ICON[issue.type] %></td>
+        <td><a href="/projects/<%= projectId %>/issues/<%= issue.number %>" data-testid="issue-link"><%= issue.title %></a></td>
+        <td title="<%= issue.priority %>"><%- PRIORITY_ICON[issue.priority] %></td>
+        <td><%= issue.assignee_name || '—' %></td>
+        <% if (canEdit) { %>
+        <td>
+          <form method="POST" action="/projects/<%= projectId %>/backlog/assign">
+            <input type="hidden" name="_csrf"     value="<%= csrf %>">
+            <input type="hidden" name="issue_id"  value="<%= issue.id %>">
+            <select name="sprint_id" onchange="this.closest('form').submit()" data-testid="select-sprint-assign">
+              <option value="">Sin sprint</option>
+              <% sprints.forEach(s => { %>
+                <option value="<%= s.id %>" <%= issue.sprint_id == s.id ? 'selected':'' %>><%= s.name %></option>
+              <% }) %>
+            </select>
+          </form>
+        </td>
+        <% } %>
+      </tr>
+  <% } %>
+
+  <% const canEdit = ['member','admin','owner'].includes(memberRole); %>
+
+  <!-- Sin sprint -->
+  <div class="backlog-section" data-testid="backlog-unsprinted">
+    <div class="backlog-section-header">
+      <h3>Sin sprint <span class="board-count"><%= backlogIssues.length %></span></h3>
+    </div>
+    <% if (backlogIssues.length) { %>
+      <table class="issues-table">
+        <thead><tr><th>#</th><th></th><th>Título</th><th>Pri</th><th>Asignado</th><% if (canEdit) { %><th>Sprint</th><% } %></tr></thead>
+        <tbody>
+          <% backlogIssues.forEach(issue => { %>
+            <%- issueRow(issue, project.id, project.key, sprints, csrfToken, canEdit) %>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p class="empty-hint">No hay issues en el backlog.</p>
+    <% } %>
+  </div>
+
+  <!-- Por sprint -->
+  <% sprints.forEach(sprint => {
+    const sIssues = sprintIssues[sprint.id] || [];
+  %>
+    <div class="backlog-section" data-testid="sprint-section-<%= sprint.id %>">
+      <div class="backlog-section-header">
+        <h3>
+          <span class="sprint-status-badge status-sprint-<%= sprint.status %>"><%= sprint.status === 'active' ? '▶ ACTIVO' : 'PLANIFICACIÓN' %></span>
+          <%= sprint.name %>
+          <span class="board-count"><%= sIssues.length %> issues</span>
+        </h3>
+        <div class="sprint-dates">
+          <% if (sprint.start_date) { %><%= sprint.start_date %> → <% } %>
+          <% if (sprint.end_date)   { %><%= sprint.end_date %><% } %>
+        </div>
+        <% if (['admin','owner'].includes(memberRole)) { %>
+          <div class="sprint-actions">
+            <% if (sprint.status === 'planning') { %>
+              <form method="POST" action="/projects/<%= project.id %>/settings/sprints/<%= sprint.id %>/start" style="display:inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="btn btn-sm" data-testid="btn-start-sprint">Iniciar sprint</button>
+              </form>
+            <% } %>
+            <% if (sprint.status === 'active') { %>
+              <form method="POST" action="/projects/<%= project.id %>/settings/sprints/<%= sprint.id %>/complete" style="display:inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('¿Completar sprint? Los issues pendientes volverán al backlog.')" data-testid="btn-complete-sprint">Completar</button>
+              </form>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+      <% if (sprint.goal) { %><p class="sprint-goal"><em><%= sprint.goal %></em></p><% } %>
+      <% if (sIssues.length) { %>
+        <table class="issues-table">
+          <thead><tr><th>#</th><th></th><th>Título</th><th>Pri</th><th>Asignado</th><% if (canEdit) { %><th>Sprint</th><% } %></tr></thead>
+          <tbody>
+            <% sIssues.forEach(issue => { %>
+              <%- issueRow(issue, project.id, project.key, sprints, csrfToken, canEdit) %>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p class="empty-hint">No hay issues en este sprint.</p>
+      <% } %>
+    </div>
+  <% }) %>
+</div>
+</body>
+</html>

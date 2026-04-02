@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proyectos — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand"><a href="/proyectos.html">QA App</a></div>
+    <div class="navbar-links">
+      <a href="/proyectos.html" data-testid="nav-proyectos">Proyectos</a>
+    </div>
+    <div class="navbar-user">
+      <span id="user-name" data-testid="navbar-username"></span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()" data-testid="btn-logout">Salir</button>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Mis Proyectos</h1>
+      <div class="header-actions">
+        <button class="btn" id="btn-nuevo-proyecto" data-testid="btn-nuevo-proyecto">
+          + Nuevo proyecto
+        </button>
+      </div>
+    </div>
+
+    <div id="alert-proyectos"></div>
+
+    <div class="project-grid" id="proyectos-grid" data-testid="proyectos-grid">
+      <div class="empty-state" id="loading-proyectos">Cargando proyectos…</div>
+    </div>
+  </div>
+
+  <!-- ── Modal: Nuevo proyecto ─────────────────────────────────────── -->
+  <div id="modal-proyecto" class="modal-overlay" style="display:none;" data-testid="modal-nuevo-proyecto">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Nuevo proyecto</h3>
+        <button class="modal-close" onclick="hideModal('modal-proyecto')" data-testid="btn-cerrar-modal-proyecto">✕</button>
+      </div>
+
+      <div id="proj-error" class="alert alert-error" style="display:none;"></div>
+
+      <form id="form-nuevo-proyecto" novalidate>
+        <div class="field">
+          <label for="proj-nombre">Nombre del proyecto *</label>
+          <input id="proj-nombre" type="text" placeholder="Mi Proyecto QA" required
+                 maxlength="80" data-testid="input-proj-nombre">
+        </div>
+        <div class="field">
+          <label for="proj-clave">Clave única *
+            <span style="font-weight:400;font-size:.8rem;color:var(--text-muted)">(ej: QA, DEV, WEB)</span>
+          </label>
+          <input id="proj-clave" type="text" placeholder="QA" required
+                 maxlength="10" style="text-transform:uppercase;"
+                 data-testid="input-proj-clave">
+        </div>
+        <div class="field">
+          <label for="proj-descripcion">Descripción</label>
+          <textarea id="proj-descripcion" rows="2" placeholder="Descripción opcional…"
+                    data-testid="input-proj-descripcion"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" data-testid="btn-crear-proyecto">Crear proyecto</button>
+          <button type="button" class="btn btn-secondary"
+                  onclick="hideModal('modal-proyecto')" data-testid="btn-cancelar-proyecto">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" data-testid="btn-theme-toggle">🌙</button>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => initProyectos());
+  </script>
+</body>
+</html>

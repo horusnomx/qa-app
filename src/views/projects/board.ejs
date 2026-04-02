@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title>Tablero · <%= project.key %> — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Modo oscuro">🌙</button>
+<%- include('../partials/_project_nav', { project, memberRole, activeTab: 'board' }) %>
+
+<div class="page-container full-width">
+  <%- include('../partials/_flash') %>
+
+  <div class="board-toolbar">
+    <form method="GET" action="/projects/<%= project.id %>/board" class="inline-form">
+      <select name="sprint" onchange="this.form.submit()" data-testid="select-sprint-filter">
+        <option value="">Todos los issues</option>
+        <% sprints.forEach(s => { %>
+          <option value="<%= s.id %>" <%= filterSprint == s.id ? 'selected' : '' %>>
+            <%= s.status === 'active' ? '▶ ' : '' %><%= s.name %>
+          </option>
+        <% }) %>
+      </select>
+    </form>
+    <% if (['member','admin','owner'].includes(memberRole)) { %>
+      <a href="/projects/<%= project.id %>/issues/new" class="btn" data-testid="btn-new-issue">+ Issue</a>
+    <% } %>
+  </div>
+
+  <%
+    const COLS = [
+      { key: 'todo',        label: 'Por hacer' },
+      { key: 'in_progress', label: 'En progreso' },
+      { key: 'in_review',   label: 'En revisión' },
+      { key: 'done',        label: 'Hecho' }
+    ];
+    const PRIORITY_ICON = { critical: '🔴', high: '🟠', medium: '🟡', low: '🔵' };
+    const TYPE_ICON     = { epic: '⚡', story: '📖', task: '✅', bug: '🐛' };
+  %>
+
+  <div class="board" data-testid="kanban-board">
+    <% COLS.forEach(col => {
+      const colIssues = issues.filter(i => i.status === col.key);
+    %>
+      <div class="board-column" data-status="<%= col.key %>" data-testid="board-column-<%= col.key %>">
+        <div class="board-column-header">
+          <span class="status-dot status-<%= col.key %>"></span>
+          <%= col.label %>
+          <span class="board-count"><%= colIssues.length %></span>
+        </div>
+        <div class="board-cards">
+          <% colIssues.forEach(issue => {
+            const labels = labelsMap[issue.id] || [];
+          %>
+            <div class="issue-card" data-testid="issue-card" data-issue-id="<%= issue.id %>">
+              <div class="issue-card-meta">
+                <span class="issue-key"><%= project.key %>-<%= issue.number %></span>
+                <span class="type-icon" title="<%= issue.type %>"><%- TYPE_ICON[issue.type] || '✅' %></span>
+                <span class="priority-icon" title="<%= issue.priority %>"><%- PRIORITY_ICON[issue.priority] || '🟡' %></span>
+              </div>
+              <a href="/projects/<%= project.id %>/issues/<%= issue.number %>" class="issue-card-title" data-testid="issue-title">
+                <%= issue.title %>
+              </a>
+              <% if (labels.length) { %>
+                <div class="issue-card-labels">
+                  <% labels.forEach(l => { %>
+                    <span class="label-pill" style="background:<%= l.color %>; color:<%= isLight(l.color) ? '#000':'#fff' %>"><%= l.name %></span>
+                  <% }) %>
+                </div>
+              <% } %>
+              <div class="issue-card-footer">
+                <% if (issue.assignee_name) { %>
+                  <span class="avatar-chip" title="<%= issue.assignee_name %>"><%= issue.assignee_name.slice(0,2).toUpperCase() %></span>
+                <% } %>
+                <% if (issue.due_date) { %>
+                  <span class="due-date <%= new Date(issue.due_date) < new Date() ? 'overdue' : '' %>"><%= issue.due_date %></span>
+                <% } %>
+                <% if (['member','admin','owner'].includes(memberRole)) { %>
+                  <form method="POST" action="/projects/<%= project.id %>/board/move" class="status-form">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="issue_id" value="<%= issue.id %>">
+                    <select name="status" class="status-mini" onchange="this.closest('form').submit()" data-testid="select-issue-status-<%= issue.number %>">
+                      <option value="backlog"     <%= issue.status==='backlog'     ? 'selected':'' %>>⬅ Backlog</option>
+                      <option value="todo"        <%= issue.status==='todo'        ? 'selected':'' %>>Por hacer</option>
+                      <option value="in_progress" <%= issue.status==='in_progress' ? 'selected':'' %>>En progreso</option>
+                      <option value="in_review"   <%= issue.status==='in_review'   ? 'selected':'' %>>En revisión</option>
+                      <option value="done"        <%= issue.status==='done'        ? 'selected':'' %>>✓ Hecho</option>
+                    </select>
+                  </form>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+          <% if (!colIssues.length) { %>
+            <div class="board-empty" data-testid="board-col-empty-<%= col.key %>">Sin issues</div>
+          <% } %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</div>
+</body>
+</html>

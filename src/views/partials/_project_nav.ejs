@@ -1,0 +1,15 @@
+<div class="project-topbar" data-testid="project-topbar">
+  <div class="project-breadcrumb">
+    <a href="/projects">Proyectos</a> /
+    <span class="project-key-badge"><%= project.key %></span>
+    <strong><%= project.name %></strong>
+  </div>
+  <nav class="project-tabs">
+    <a href="/projects/<%= project.id %>/board"   class="tab <%= activeTab==='board'   ? 'active':'' %>" data-testid="tab-board">Tablero</a>
+    <a href="/projects/<%= project.id %>/backlog" class="tab <%= activeTab==='backlog' ? 'active':'' %>" data-testid="tab-backlog">Backlog</a>
+    <a href="/projects/<%= project.id %>/issues"  class="tab <%= activeTab==='issues'  ? 'active':'' %>" data-testid="tab-issues">Issues</a>
+    <% if (['admin','owner'].includes(memberRole)) { %>
+    <a href="/projects/<%= project.id %>/settings" class="tab <%= activeTab==='settings' ? 'active':'' %>" data-testid="tab-settings">Configuración</a>
+    <% } %>
+  </nav>
+</div>

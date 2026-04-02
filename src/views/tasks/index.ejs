@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title>Mis Tareas — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Cambiar tema">🌙</button>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Mis Tareas</h1>
+      <a href="/tasks/new" class="btn" data-testid="btn-new-task">+ Nueva tarea</a>
+    </div>
+
+    <%- include('../partials/_flash') %>
+
+    <!-- Búsqueda y filtros -->
+    <form method="GET" action="/tasks" class="filters-bar" data-testid="filters-form">
+      <input type="text" name="search" placeholder="Buscar por título…"
+        value="<%= filters.search %>" data-testid="input-search" class="search-input">
+
+      <select name="status" data-testid="select-filter-status">
+        <option value="">Todos los estados</option>
+        <option value="pending"     <%= filters.status === 'pending'     ? 'selected' : '' %>>Pendiente</option>
+        <option value="in_progress" <%= filters.status === 'in_progress' ? 'selected' : '' %>>En progreso</option>
+        <option value="done"        <%= filters.status === 'done'        ? 'selected' : '' %>>Hecho</option>
+      </select>
+
+      <select name="limit" data-testid="select-page-size">
+        <% [5, 10, 20, 50].forEach(n => { %>
+          <option value="<%= n %>" <%= pagination.limit === n ? 'selected' : '' %>><%= n %> por página</option>
+        <% }) %>
+      </select>
+
+      <input type="hidden" name="page" value="1">
+      <button type="submit" class="btn" data-testid="btn-apply-filters">Filtrar</button>
+      <a href="/tasks" class="btn btn-secondary" data-testid="btn-clear-filters">Limpiar</a>
+    </form>
+
+    <!-- Tabla -->
+    <% if (tasks.length === 0) { %>
+      <p data-testid="empty-message">No hay tareas que mostrar.</p>
+    <% } else { %>
+      <table data-testid="tasks-table">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tasks.forEach(task => { %>
+            <tr data-testid="task-row" data-task-id="<%= task.id %>">
+              <td data-testid="task-title"><%= task.title %></td>
+              <td data-testid="task-description"><%= task.description %></td>
+              <td>
+                <!-- Cambio de estado inline -->
+                <form method="POST" action="/tasks/<%= task.id %>/status" data-testid="form-status-<%= task.id %>">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <select name="status" class="status-select badge badge-<%= task.status %>"
+                    data-testid="select-task-status"
+                    onchange="this.closest('form').submit()">
+                    <option value="pending"     class="badge-pending"     <%= task.status === 'pending'     ? 'selected' : '' %>>Pendiente</option>
+                    <option value="in_progress" class="badge-in_progress" <%= task.status === 'in_progress' ? 'selected' : '' %>>En progreso</option>
+                    <option value="done"        class="badge-done"        <%= task.status === 'done'        ? 'selected' : '' %>>Hecho</option>
+                  </select>
+                </form>
+              </td>
+              <td class="actions">
+                <a href="/tasks/<%= task.id %>/edit" class="btn btn-small" data-testid="btn-edit-task">Editar</a>
+                <form method="POST" action="/tasks/<%= task.id %>/delete" style="display:inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="btn btn-small btn-danger" data-testid="btn-delete-task"
+                    onclick="return confirm('¿Eliminar esta tarea?')">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <!-- Paginación -->
+      <div class="pagination" data-testid="pagination">
+        <span class="pagination-info">
+          <%= pagination.total %> tarea<%= pagination.total !== 1 ? 's' : '' %> ·
+          Página <%= pagination.page %> de <%= pagination.totalPages %>
+        </span>
+        <div class="pagination-links">
+          <% if (pagination.page > 1) { %>
+            <a href="/tasks?page=<%= pagination.page - 1 %>&limit=<%= pagination.limit %>&search=<%= encodeURIComponent(filters.search) %>&status=<%= filters.status %>"
+              class="btn btn-small" data-testid="btn-prev-page">← Anterior</a>
+          <% } %>
+          <% for (let p = 1; p <= pagination.totalPages; p++) { %>
+            <a href="/tasks?page=<%= p %>&limit=<%= pagination.limit %>&search=<%= encodeURIComponent(filters.search) %>&status=<%= filters.status %>"
+              class="btn btn-small <%= p === pagination.page ? 'btn-active' : 'btn-secondary' %>"
+              data-testid="btn-page-<%= p %>"><%= p %></a>
+          <% } %>
+          <% if (pagination.page < pagination.totalPages) { %>
+            <a href="/tasks?page=<%= pagination.page + 1 %>&limit=<%= pagination.limit %>&search=<%= encodeURIComponent(filters.search) %>&status=<%= filters.status %>"
+              class="btn btn-small" data-testid="btn-next-page">Siguiente →</a>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+  </div>
+</body>
+</html>

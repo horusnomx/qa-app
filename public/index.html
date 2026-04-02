@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA App — Iniciar sesión</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" data-testid="btn-theme-toggle">🌙</button>
+
+  <div class="container" style="max-width:420px;margin:4rem auto;">
+    <h1 style="text-align:center;margin-bottom:.25rem;">QA App</h1>
+    <p style="text-align:center;color:var(--text-muted);margin-bottom:2rem;font-size:.9rem;">Gestión de proyectos estilo JIRA</p>
+
+    <!-- ── LOGIN ── -->
+    <div id="panel-login">
+      <h2 style="margin-bottom:1.25rem;font-size:1.2rem;">Iniciar sesión</h2>
+
+      <div id="login-error" class="alert alert-error" style="display:none;" data-testid="login-error"></div>
+
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="login-email">Email</label>
+          <input id="login-email" name="email" type="email" placeholder="tu@email.com"
+                 autocomplete="email" required data-testid="input-email">
+        </div>
+        <div class="field">
+          <label for="login-password">Contraseña</label>
+          <input id="login-password" name="password" type="password" placeholder="••••••••"
+                 autocomplete="current-password" required data-testid="input-password">
+        </div>
+        <div class="form-actions" style="flex-direction:column;gap:.75rem;">
+          <button type="submit" style="width:100%;justify-content:center;" data-testid="btn-login">
+            Iniciar sesión
+          </button>
+          <p style="text-align:center;font-size:.9rem;margin:0;">
+            ¿No tienes cuenta?
+            <a href="#" id="ir-a-registro" data-testid="btn-go-register">Regístrate</a>
+          </p>
+        </div>
+      </form>
+    </div>
+
+    <!-- ── REGISTER ── -->
+    <div id="panel-registro" style="display:none;">
+      <h2 style="margin-bottom:1.25rem;font-size:1.2rem;">Crear cuenta</h2>
+
+      <div id="register-error" class="alert alert-error" style="display:none;" data-testid="register-error"></div>
+
+      <form id="register-form" novalidate>
+        <div class="field">
+          <label for="reg-username">Username</label>
+          <input id="reg-username" name="username" type="text" placeholder="juandev"
+                 autocomplete="username" required data-testid="input-username">
+        </div>
+        <div class="field">
+          <label for="reg-email">Email</label>
+          <input id="reg-email" name="email" type="email" placeholder="tu@email.com"
+                 autocomplete="email" required data-testid="input-email-reg">
+        </div>
+        <div class="field">
+          <label for="reg-password">Contraseña</label>
+          <input id="reg-password" name="password" type="password" placeholder="Mínimo 6 caracteres"
+                 autocomplete="new-password" required data-testid="input-password-reg">
+        </div>
+        <div class="form-actions" style="flex-direction:column;gap:.75rem;">
+          <button type="submit" style="width:100%;justify-content:center;" data-testid="btn-register">
+            Crear cuenta
+          </button>
+          <p style="text-align:center;font-size:.9rem;margin:0;">
+            ¿Ya tienes cuenta?
+            <a href="#" id="ir-a-login" data-testid="btn-go-login">Inicia sesión</a>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => initLogin());
+  </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <title><%= task ? 'Editar' : 'Nueva' %> Tarea — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<%- include('../partials/_navbar') %>
+<button class="theme-toggle" onclick="toggleTheme()" data-testid="btn-theme-toggle" aria-label="Cambiar tema">🌙</button>
+
+  <div class="page-container" style="max-width:620px">
+    <h1><%= task ? 'Editar tarea' : 'Nueva tarea' %></h1>
+
+    <%- include('../partials/_flash') %>
+
+    <% if (errors.length) { %>
+      <ul class="error-list" data-testid="error-list">
+        <% errors.forEach(e => { %><li><%= e %></li><% }) %>
+      </ul>
+    <% } %>
+
+    <form method="POST" action="<%= task ? '/tasks/' + task.id + '/edit' : '/tasks' %>" data-testid="task-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="field">
+        <label for="title">Título</label>
+        <input type="text" id="title" name="title" data-testid="input-title"
+          value="<%= task ? task.title : '' %>" required maxlength="100">
+      </div>
+      <div class="field">
+        <label for="description">Descripción</label>
+        <textarea id="description" name="description" data-testid="input-description"
+          rows="3"><%= task ? task.description : '' %></textarea>
+      </div>
+      <div class="field">
+        <label for="status">Estado</label>
+        <select id="status" name="status" data-testid="select-status">
+          <option value="pending"     <%= (!task || task.status === 'pending')     ? 'selected' : '' %>>Pendiente</option>
+          <option value="in_progress" <%= (task && task.status === 'in_progress')  ? 'selected' : '' %>>En progreso</option>
+          <option value="done"        <%= (task && task.status === 'done')         ? 'selected' : '' %>>Hecho</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" data-testid="btn-submit-task"><%= task ? 'Guardar cambios' : 'Crear tarea' %></button>
+        <a href="/tasks" data-testid="btn-cancel">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
