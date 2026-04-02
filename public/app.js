@@ -5,7 +5,7 @@
 
 // ── Tema (ejecuta inmediatamente para evitar flash) ───────────────────────────
 (function () {
-  const saved = localStorage.getItem('theme') || 'light';
+  const saved = localStorage.getItem('theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
 })();
 

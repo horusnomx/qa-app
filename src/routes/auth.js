@@ -60,8 +60,8 @@ router.post('/register', registerLimiter, async (req, res) => {
 
     res.status(201).json({ token, user: { id: user.id, username: user.username, email: user.email } });
   } catch (err) {
-    console.error('register:', err.message);
-    res.status(500).json({ error: 'Error al registrar usuario' });
+    console.error('register:', err.message, err.details, err.hint);
+    res.status(500).json({ error: err.message || 'Error al registrar usuario' });
   }
 });
 
