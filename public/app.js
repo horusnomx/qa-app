@@ -194,6 +194,7 @@ async function initProyectos() {
   const userNameEl = document.getElementById('user-name');
   if (userNameEl) userNameEl.textContent = user?.username || '';
 
+  injectAdminLink();
   await renderProyectos();
 
   // Botón nuevo proyecto
@@ -837,3 +838,223 @@ function esc(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+// ── Inyectar link de Admin en navbar si el usuario es admin ───────────────────
+function injectAdminLink() {
+  const user = getUser();
+  if (!user?.is_admin) return;
+  const links = document.querySelector('.navbar-links');
+  if (!links || links.querySelector('[href="/admin.html"]')) return;
+  const a = document.createElement('a');
+  a.href = '/admin.html';
+  a.textContent = '⚙ Admin';
+  a.setAttribute('data-testid', 'nav-admin');
+  links.appendChild(a);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  PAGE: FORGOT PASSWORD
+// ══════════════════════════════════════════════════════════════════════════════
+function initForgotPassword() {
+  syncThemeButton();
+
+  document.getElementById('forgot-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showError('forgot-error', '');
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Procesando…';
+
+    try {
+      const data = await api('POST', '/auth/forgot-password', {
+        email: document.getElementById('forgot-email').value.trim()
+      });
+
+      document.getElementById('panel-solicitar').style.display = 'none';
+      document.getElementById('panel-resultado').style.display = 'block';
+
+      const urlEl = document.getElementById('reset-url-display');
+      urlEl.textContent = data.reset_url;
+      urlEl.href        = data.reset_url;
+    } catch (err) {
+      showError('forgot-error', err.message);
+      btn.disabled = false;
+      btn.textContent = 'Enviar link de reset';
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  PAGE: RESET PASSWORD
+// ══════════════════════════════════════════════════════════════════════════════
+function initResetPassword() {
+  syncThemeButton();
+
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+
+  if (!token) {
+    document.getElementById('panel-reset').style.display        = 'none';
+    document.getElementById('panel-token-invalido').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('reset-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showError('reset-error', '');
+
+    const password  = document.getElementById('nueva-password').value;
+    const confirmar = document.getElementById('confirmar-password').value;
+
+    if (password !== confirmar) {
+      showError('reset-error', 'Las contraseñas no coinciden');
+      return;
+    }
+    if (password.length < 6) {
+      showError('reset-error', 'La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Actualizando…';
+
+    try {
+      await api('POST', '/auth/reset-password', { token, password });
+      document.getElementById('panel-reset').style.display  = 'none';
+      document.getElementById('panel-exito').style.display  = 'block';
+    } catch (err) {
+      if (err.message.includes('inválido') || err.message.includes('expirado')) {
+        document.getElementById('panel-reset').style.display         = 'none';
+        document.getElementById('panel-token-invalido').style.display = 'block';
+      } else {
+        showError('reset-error', err.message);
+        btn.disabled = false;
+        btn.textContent = 'Cambiar contraseña';
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  PAGE: ADMIN PANEL
+// ══════════════════════════════════════════════════════════════════════════════
+async function initAdmin() {
+  syncThemeButton();
+  if (!requireAuth()) return;
+
+  const user = getUser();
+  if (!user?.is_admin) {
+    window.location.href = '/proyectos.html';
+    return;
+  }
+
+  const userNameEl = document.getElementById('user-name');
+  if (userNameEl) userNameEl.textContent = user.username;
+
+  injectAdminLink();
+  await renderTablaUsuarios();
+}
+
+async function renderTablaUsuarios() {
+  const wrapper = document.getElementById('tabla-usuarios-wrapper');
+  wrapper.innerHTML = '<p style="color:var(--text-muted);">Cargando…</p>';
+
+  try {
+    const usuarios = await api('GET', '/admin/usuarios');
+    const totalEl  = document.getElementById('total-usuarios');
+    if (totalEl) totalEl.textContent = `${usuarios.length} usuario${usuarios.length !== 1 ? 's' : ''}`;
+
+    if (usuarios.length === 0) {
+      wrapper.innerHTML = '<p style="color:var(--text-muted);">No hay usuarios registrados.</p>';
+      return;
+    }
+
+    wrapper.innerHTML = `
+      <table class="issues-table" data-testid="tabla-usuarios">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Registro</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${usuarios.map(u => `
+            <tr data-testid="usuario-row-${u.id}">
+              <td>
+                <strong data-testid="usuario-username-${u.id}">${esc(u.username)}</strong>
+              </td>
+              <td style="color:var(--text-muted);" data-testid="usuario-email-${u.id}">
+                ${esc(u.email)}
+              </td>
+              <td>
+                ${u.is_admin
+                  ? '<span class="badge role-badge role-owner" data-testid="badge-admin">Admin</span>'
+                  : '<span class="badge role-badge role-member" data-testid="badge-member">Member</span>'}
+              </td>
+              <td style="font-size:.82rem;color:var(--text-muted);">
+                ${fmtDate(u.created_at)}
+              </td>
+              <td>
+                <div class="actions">
+                  <button class="btn btn-secondary btn-sm"
+                          onclick="generarTempPassword('${u.id}', '${esc(u.username)}')"
+                          data-testid="btn-temp-pass-${u.id}">
+                    🔑 Temp password
+                  </button>
+                  ${!u.is_admin
+                    ? `<button class="btn btn-sm" style="background:#6610f2;"
+                               onclick="toggleAdmin('${u.id}', true)"
+                               data-testid="btn-make-admin-${u.id}">
+                        Hacer admin
+                       </button>`
+                    : getUser()?.id !== u.id
+                      ? `<button class="btn btn-secondary btn-sm"
+                                 onclick="toggleAdmin('${u.id}', false)"
+                                 data-testid="btn-quitar-admin-${u.id}">
+                          Quitar admin
+                         </button>`
+                      : ''}
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    wrapper.innerHTML = `<div class="alert alert-error">${esc(err.message)}</div>`;
+  }
+}
+
+window.generarTempPassword = async function (userId, username) {
+  if (!confirm(`¿Generar una contraseña temporal para ${username}? Esto reemplazará su contraseña actual.`)) return;
+
+  try {
+    const data = await api('POST', `/admin/usuarios/${userId}/reset-password`);
+
+    document.getElementById('temp-pass-usuario').textContent = `${data.usuario.username} (${data.usuario.email})`;
+    document.getElementById('temp-pass-value').textContent   = data.temp_password;
+    showModal('modal-temp-pass');
+  } catch (err) {
+    const alertEl = document.getElementById('admin-alert');
+    alertEl.innerHTML = `<div class="alert alert-error">${esc(err.message)}</div>`;
+    setTimeout(() => alertEl.innerHTML = '', 4000);
+  }
+};
+
+window.toggleAdmin = async function (userId, makeAdmin) {
+  const accion = makeAdmin ? 'promover a admin' : 'quitar rol de admin';
+  if (!confirm(`¿Quieres ${accion} a este usuario?`)) return;
+
+  try {
+    await api('PATCH', `/admin/usuarios/${userId}/admin`, { is_admin: makeAdmin });
+    await renderTablaUsuarios();
+  } catch (err) {
+    const alertEl = document.getElementById('admin-alert');
+    alertEl.innerHTML = `<div class="alert alert-error">${esc(err.message)}</div>`;
+    setTimeout(() => alertEl.innerHTML = '', 4000);
+  }
+};

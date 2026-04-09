@@ -1,30 +1,55 @@
 -- ══════════════════════════════════════════════════════════════════════════════
---  QA App — Supabase Schema
+--  QA App — Supabase Schema v2
 --  Ejecuta este SQL en el SQL Editor de tu proyecto en supabase.com
 -- ══════════════════════════════════════════════════════════════════════════════
 
+-- ── Limpieza previa ───────────────────────────────────────────────────────────
+DROP TABLE IF EXISTS reset_tokens      CASCADE;
+DROP TABLE IF EXISTS historial_status  CASCADE;
+DROP TABLE IF EXISTS comentarios       CASCADE;
+DROP TABLE IF EXISTS issues            CASCADE;
+DROP TABLE IF EXISTS proyecto_miembros CASCADE;
+DROP TABLE IF EXISTS proyectos         CASCADE;
+DROP TABLE IF EXISTS usuarios          CASCADE;
+
 -- ── Tabla: usuarios ──────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS usuarios (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username     TEXT UNIQUE NOT NULL,
-  email        TEXT UNIQUE NOT NULL,
+CREATE TABLE usuarios (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username      TEXT UNIQUE NOT NULL,
+  email         TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  created_at   TIMESTAMPTZ DEFAULT NOW()
+  is_admin      BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ── Tabla: reset_tokens ───────────────────────────────────────────────────────
+-- Sirve para "forgot password" y contraseñas temporales de admin
+CREATE TABLE reset_tokens (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  usuario_id  UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  token       TEXT UNIQUE NOT NULL,
+  tipo        TEXT NOT NULL DEFAULT 'reset'
+              CHECK (tipo IN ('reset', 'temporal')),  -- reset=usuario, temporal=admin
+  usado       BOOLEAN NOT NULL DEFAULT FALSE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_reset_tokens_token ON reset_tokens (token);
+
 -- ── Tabla: proyectos ─────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS proyectos (
+CREATE TABLE proyectos (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nombre      TEXT NOT NULL,
   descripcion TEXT,
-  clave       TEXT UNIQUE NOT NULL,          -- Ej: "QA", "DEV", "WEB"
+  clave       TEXT UNIQUE NOT NULL,
   owner_id    UUID REFERENCES usuarios(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ DEFAULT NOW(),
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ── Tabla: proyecto_miembros ─────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS proyecto_miembros (
+CREATE TABLE proyecto_miembros (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   proyecto_id UUID NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
   usuario_id  UUID NOT NULL REFERENCES usuarios(id)  ON DELETE CASCADE,
@@ -35,7 +60,7 @@ CREATE TABLE IF NOT EXISTS proyecto_miembros (
 );
 
 -- ── Tabla: issues ────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS issues (
+CREATE TABLE issues (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   proyecto_id   UUID NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
   numero        INTEGER NOT NULL,
@@ -54,13 +79,12 @@ CREATE TABLE IF NOT EXISTS issues (
   UNIQUE (proyecto_id, numero)
 );
 
--- Índices de performance
-CREATE INDEX IF NOT EXISTS idx_issues_proyecto  ON issues (proyecto_id);
-CREATE INDEX IF NOT EXISTS idx_issues_status    ON issues (status);
-CREATE INDEX IF NOT EXISTS idx_issues_asignado  ON issues (asignado_a);
+CREATE INDEX idx_issues_proyecto ON issues (proyecto_id);
+CREATE INDEX idx_issues_status   ON issues (status);
+CREATE INDEX idx_issues_asignado ON issues (asignado_a);
 
 -- ── Tabla: comentarios ───────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS comentarios (
+CREATE TABLE comentarios (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   issue_id    UUID NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
   usuario_id  UUID REFERENCES usuarios(id) ON DELETE SET NULL,
@@ -68,10 +92,10 @@ CREATE TABLE IF NOT EXISTS comentarios (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_comentarios_issue ON comentarios (issue_id);
+CREATE INDEX idx_comentarios_issue ON comentarios (issue_id);
 
 -- ── Tabla: historial_status ──────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS historial_status (
+CREATE TABLE historial_status (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   issue_id         UUID NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
   usuario_id       UUID REFERENCES usuarios(id) ON DELETE SET NULL,
@@ -80,13 +104,25 @@ CREATE TABLE IF NOT EXISTS historial_status (
   created_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_historial_issue ON historial_status (issue_id);
+CREATE INDEX idx_historial_issue ON historial_status (issue_id);
 
--- ── Deshabilitar RLS (el backend usa service_role key que lo bypasea igualmente)
--- ── Descomenta si quieres ser explícito:
--- ALTER TABLE usuarios          DISABLE ROW LEVEL SECURITY;
--- ALTER TABLE proyectos         DISABLE ROW LEVEL SECURITY;
--- ALTER TABLE proyecto_miembros DISABLE ROW LEVEL SECURITY;
--- ALTER TABLE issues            DISABLE ROW LEVEL SECURITY;
--- ALTER TABLE comentarios       DISABLE ROW LEVEL SECURITY;
--- ALTER TABLE historial_status  DISABLE ROW LEVEL SECURITY;
+
+-- ══════════════════════════════════════════════════════════════════════════════
+--  ROW LEVEL SECURITY (RLS)
+--  El backend usa service_role key → bypasea RLS automáticamente.
+--  Activamos RLS de todas formas como capa de defensa adicional por si
+--  alguien accede directamente a la DB con un anon key.
+-- ══════════════════════════════════════════════════════════════════════════════
+
+ALTER TABLE usuarios          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reset_tokens      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE proyectos         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE proyecto_miembros ENABLE ROW LEVEL SECURITY;
+ALTER TABLE issues            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comentarios       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE historial_status  ENABLE ROW LEVEL SECURITY;
+
+-- Con service_role key (que usamos en el backend) RLS no aplica.
+-- Con anon key, ninguna operación directa es posible (deny-all por defecto).
+-- Si en el futuro quieres exponer alguna tabla al cliente directamente,
+-- agrega políticas específicas aquí.

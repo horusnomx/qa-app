@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — QA App</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand"><a href="/proyectos.html">QA App</a></div>
+    <div class="navbar-links">
+      <a href="/proyectos.html" data-testid="nav-proyectos">Proyectos</a>
+      <a href="/admin.html" class="tab active" data-testid="nav-admin">Admin</a>
+    </div>
+    <div class="navbar-user">
+      <span id="user-name" data-testid="navbar-username"></span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()" data-testid="btn-logout">Salir</button>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Panel de administración</h1>
+    </div>
+
+    <div id="admin-alert"></div>
+
+    <!-- ── Tabla de usuarios ── -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="page-header" style="margin-bottom:1rem;">
+        <h2 style="font-size:1.1rem;">Usuarios registrados</h2>
+        <span id="total-usuarios" style="font-size:.85rem;color:var(--text-muted);" data-testid="total-usuarios"></span>
+      </div>
+
+      <div id="tabla-usuarios-wrapper">
+        <p style="color:var(--text-muted);">Cargando usuarios…</p>
+      </div>
+    </div>
+
+    <!-- ── Modal: contraseña temporal generada ── -->
+    <div id="modal-temp-pass" class="modal-overlay" style="display:none;" data-testid="modal-temp-pass">
+      <div class="modal-box" style="max-width:440px;">
+        <div class="modal-header">
+          <h3>Contraseña temporal generada</h3>
+          <button class="modal-close" onclick="hideModal('modal-temp-pass')" data-testid="btn-cerrar-modal-pass">✕</button>
+        </div>
+
+        <div class="alert alert-info" style="margin-bottom:1rem;">
+          ℹ️ Comparte esta contraseña con el usuario. Solo se muestra una vez.
+        </div>
+
+        <div style="padding:1rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border2);margin-bottom:1rem;">
+          <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.35rem;">Usuario</p>
+          <p id="temp-pass-usuario" style="font-weight:600;margin-bottom:.75rem;" data-testid="temp-pass-usuario"></p>
+          <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.35rem;">Contraseña temporal</p>
+          <p id="temp-pass-value" style="font-family:monospace;font-size:1.3rem;font-weight:700;letter-spacing:.1em;color:var(--primary);"
+             data-testid="temp-pass-value"></p>
+        </div>
+
+        <button class="btn" onclick="copiarTempPass()" style="width:100%;justify-content:center;margin-bottom:.75rem;"
+                data-testid="btn-copiar-temp-pass">
+          Copiar contraseña
+        </button>
+        <p style="font-size:.82rem;color:var(--text-muted);text-align:center;">
+          El usuario debe cambiar esta contraseña al iniciar sesión.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" data-testid="btn-theme-toggle">🌙</button>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => initAdmin());
+
+    function copiarTempPass() {
+      const pass = document.getElementById('temp-pass-value').textContent;
+      navigator.clipboard.writeText(pass).then(() => {
+        const btn = document.querySelector('[data-testid="btn-copiar-temp-pass"]');
+        btn.textContent = '✅ Copiada';
+        setTimeout(() => btn.textContent = 'Copiar contraseña', 2000);
+      });
+    }
+  </script>
+</body>
+</html>
